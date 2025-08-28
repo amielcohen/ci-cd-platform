@@ -2,7 +2,7 @@ pipeline {
   agent any
   environment {
     AWS_REGION = 'us-east-1'
-    APP_REPO   = 'ci-cd-platform'   
+    APP_REPO   = 'ci-cd-platform'      
   }
 
   stages {
@@ -11,7 +11,7 @@ pipeline {
     }
 
     stage('PR CI') {
-      when { changeRequest() }
+      when { changeRequest() }           
       agent none
       stages {
 
@@ -39,9 +39,9 @@ pipeline {
               IMAGE=$ECR_REGISTRY/$APP_REPO:pr-$CHANGE_ID-$BUILD_NUMBER
 
               aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-
               docker build -t $IMAGE .
               echo $IMAGE > .image_ref
+              echo "Built image: $IMAGE"
             '''
           }
         }
@@ -55,10 +55,18 @@ pipeline {
                 set -e
                 pip install --upgrade pip
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-                pip install pytest
-                pytest -q --maxfail=1 --disable-warnings
+                pip install pytest pytest-cov
+                # הפקה של דוח JUnit כדי ש-Jenkins יציג תוצאות
+                pytest -q --maxfail=1 --disable-warnings --junitxml=test-results.xml --cov=. --cov-report=term
               '
             '''
+          }
+          post {
+            always {
+              // מציג תוצאות בדשבורד ושומר אותן
+              junit allowEmptyResults: true, testResults: 'test-results.xml'
+              archiveArtifacts artifacts: 'test-results.xml', fingerprint: true, allowEmptyArchive: true
+            }
           }
         }
 
@@ -69,7 +77,6 @@ pipeline {
               set -e
               IMAGE=$(cat .image_ref)
               ECR_REGISTRY=$(echo $IMAGE | cut -d/ -f1)
-
               aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
               docker push $IMAGE
               echo "Pushed: $IMAGE"
@@ -77,7 +84,7 @@ pipeline {
           }
         }
 
-      } 
-    } 
-  } 
+      } // inner stages
+    } // PR CI wrapper
+  } // stages
 }
