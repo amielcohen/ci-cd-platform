@@ -56,14 +56,12 @@ pipeline {
                 pip install --upgrade pip
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
                 pip install pytest pytest-cov
-                # הפקה של דוח JUnit כדי ש-Jenkins יציג תוצאות
                 pytest -q --maxfail=1 --disable-warnings --junitxml=test-results.xml --cov=. --cov-report=term
               '
             '''
           }
           post {
             always {
-              // מציג תוצאות בדשבורד ושומר אותן
               junit allowEmptyResults: true, testResults: 'test-results.xml'
               archiveArtifacts artifacts: 'test-results.xml', fingerprint: true, allowEmptyArchive: true
             }
