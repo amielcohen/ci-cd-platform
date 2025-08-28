@@ -1,6 +1,6 @@
 pipeline {
   agent any
-  options { timestamps(); ansiColor('xterm'); buildDiscarder(logRotator(numToKeepStr: '20')) }
+  options { timestamps(); buildDiscarder(logRotator(numToKeepStr: '20')) }
   environment {
     AWS_REGION   = 'us-east-1'
     AWS_ACCOUNT  = '992382545251'
@@ -39,9 +39,7 @@ pipeline {
     stage('Docker Build') {
       when { branch 'master' }
       steps {
-        script {
-          env.IMAGE_TAG = "master-${env.BUILD_NUMBER}-${env.COMMIT_SHORT}"
-        }
+        script { env.IMAGE_TAG = "master-${env.BUILD_NUMBER}-${env.COMMIT_SHORT}" }
         sh 'docker build -t ${APP_NAME}:${IMAGE_TAG} .'
       }
     }
