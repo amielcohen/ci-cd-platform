@@ -2,7 +2,7 @@ pipeline {
   agent any
   environment {
     AWS_REGION = 'us-east-1'
-    
+    APP_REPO   = 'ci-cd-platform'   
   }
 
   stages {
@@ -14,6 +14,17 @@ pipeline {
       when { changeRequest() }
       agent none
       stages {
+
+        stage('Ensure ECR Repo Exists') {
+          agent { docker { image 'amazon/aws-cli:2' } }
+          steps {
+            sh '''
+              set -e
+              aws ecr describe-repositories --repository-names "$APP_REPO" --region "$AWS_REGION" >/dev/null 2>&1 || \
+              aws ecr create-repository --repository-name "$APP_REPO" --region "$AWS_REGION" >/dev/null
+            '''
+          }
+        }
 
         stage('Build Image (PR)') {
           agent { docker { image 'docker:24.0-cli'; args '-v /var/run/docker.sock:/var/run/docker.sock' } }
@@ -66,7 +77,7 @@ pipeline {
           }
         }
 
-      } // end inner stages
-    } // end PR CI wrapper
-  } // end stages
+      } 
+    } 
+  } 
 }
