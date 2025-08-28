@@ -16,7 +16,7 @@ pipeline {
       stages {
 
         stage('Ensure ECR Repo Exists') {
-          agent { docker { image 'amazon/aws-cli:2' } }
+          agent { docker { image 'docker:24.0-cli'; args '-v /var/run/docker.sock:/var/run/docker.sock' } }
           steps {
             sh '''
               set -e
